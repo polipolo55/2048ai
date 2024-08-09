@@ -8,6 +8,7 @@ class Game:
     self.GameOver = False
     self.add_new_tile()
     self.add_new_tile()
+    self.nmovements=0
     
   def add_new_tile(self):
     empty_cells = list(zip(*np.where(self.board == 0)))
@@ -26,15 +27,17 @@ class Game:
         new_row = np.pad(new_row, (0, 4 - len(new_row)), 'constant')
         for col in range(3):
           if new_row[col] == new_row[col + 1] and new_row[col] != 0:
-              new_row[col] *= 2
-              self.score += new_row[col]
-              new_row[col + 1] = 0
-              moved = True
+            new_row[col] *= 2
+            self.score += new_row[col]
+            new_row[col + 1] = 0
+            moved = True
+            self.nmovements+=1
         new_row = new_row[new_row != 0]
         new_row = np.pad(new_row, (0, 4 - len(new_row)), 'constant')
         
         if not np.array_equal(self.board[row], new_row):
             moved = True
+            self.nmovements+=1
             self.board[row] = new_row
       return moved
 
@@ -58,13 +61,19 @@ class Game:
 
   def game_over(self):
     temp_board = self.board.copy()
+    temp_score = self.score
+    temp_nmovements = self.nmovements
+    moved = True
     if self.slide_left() or self.slide_right() or self.slide_up() or self.slide_down():
-      self.board = temp_board
-      return False
+      moved = False
+    
     self.board = temp_board
-    return True
+    self.score = temp_score
+    self.nmovements = temp_nmovements
+    return moved
     
 
+'''
 def main():
   game = Game()
   game.display()
@@ -91,7 +100,8 @@ def main():
 
 if __name__ == "__main__":
     main()
-  
-  
+
+'''
+
   
   
