@@ -10,10 +10,8 @@ class Game_2048:
 
     def test_ai(self, genome, config):
         net= neat.nn.FeedForwardNetwork.create(genome,config)
-        nlock=0
         run = True
         while run: 
-
             b = self.board.flatten()
             output = net.activate(b)
             #pillar si ha mogut o no si 10 cops fa moviment no valid para partida
@@ -28,21 +26,17 @@ class Game_2048:
             else:
                 moved=self.game.slide_right()
 
-            if not moved: nlock+=1
-            else: 
-                nlock=0
+            if moved: 
                 self.game.add_new_tile()
-            game_info = (self.game.score, nlock, self.game.nmovements)
-            if nlock == 2 or self.game.game_over(): 
+            if self.game.game_over(): 
                 break 
             self.game.display()
 
     def train_ai(self, genome,config):
-        run=True
+        run = True
+        notMoved = 0
         net = neat.nn.FeedForwardNetwork.create(genome,config)
-        nlock=0
         while run: 
-            self.game.display()
             b = self.board.flatten()
             output = net.activate(b)
             #pillar si ha mogut o no si 10 cops fa moviment no valid para partida
@@ -56,12 +50,11 @@ class Game_2048:
                 moved=self.game.slide_left()
             else:
                 moved=self.game.slide_right()
-            if not moved: nlock+=1
+            if not moved: notMoved+=1
             else: 
-                nlock=0
                 self.game.add_new_tile()
-            game_info = (self.game.score, self.game.nmovements)
-            if nlock == 2 or self.game.game_over(): 
+            game_info = (self.game.score, self.game.nmovements, notMoved)
+            if self.game.game_over(): 
                 self.calculate_fitness(genome, game_info)
                 run=False
                 break
@@ -69,9 +62,30 @@ class Game_2048:
             
     
     def calculate_fitness(self, genome, game_info):
-        genome.fitness += float(game_info[0]) + float(game_info[1]) 
+        score, nmovements, notMoved = game_info
+        
+        max_tile = self.board.max()
+        
+        fitness = float(score)
+        
+        fitness += max_tile ** 2
+        
+        fitness -= nmovements * 0.1
+        
+        fitness -= notMoved * 2
+        
+        stability_bonus = 0
+        for x in range(4):
+            for y in range(4):
+                if x < 3:
+                    stability_bonus -= abs(self.board[x, y] - self.board[x+1, y])
+                if y < 3:
+                    stability_bonus -= abs(self.board[x, y] - self.board[x, y+1])
+        
+        fitness += stability_bonus * 0.1
+        
+        genome.fitness += fitness
             
-
 def eval_genomes(genomes, config):
     for i, (genome_id1, genome) in enumerate(genomes):
         genome.fitness= 0.0
